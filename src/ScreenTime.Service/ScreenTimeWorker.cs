@@ -174,7 +174,7 @@ public class ScreenTimeWorker : BackgroundService
 
             if (WTSQuerySessionInformation(IntPtr.Zero, sessionId, WTS_INFO_CLASS.WTSUserName, out var buffer, out _))
             {
-                var username = Marshal.PtrToStringAuto(buffer);
+                var username = Marshal.PtrToStringUni(buffer);
                 WTSFreeMemory(buffer);
                 return username;
             }
@@ -229,7 +229,7 @@ public class ScreenTimeWorker : BackgroundService
     [DllImport("kernel32.dll")]
     private static extern uint WTSGetActiveConsoleSessionId();
 
-    [DllImport("wtsapi32.dll", SetLastError = true)]
+    [DllImport("wtsapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern bool WTSQuerySessionInformation(IntPtr hServer, uint sessionId, WTS_INFO_CLASS wtsInfoClass, out IntPtr ppBuffer, out uint bytesReturned);
 
     [DllImport("wtsapi32.dll")]
