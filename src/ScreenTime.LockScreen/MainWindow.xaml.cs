@@ -1,5 +1,4 @@
 using System.IO;
-using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
@@ -44,29 +43,31 @@ public partial class MainWindow : Window
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         _pipeCts = new CancellationTokenSource();
-        Task.Run(() => ListenForCommands(_pipeCts.Token));
+        Task.Run(() => PollForCommands(_pipeCts.Token));
     }
 
-    private async Task ListenForCommands(CancellationToken ct)
+    private async Task PollForCommands(CancellationToken ct)
     {
-        var pipeName = PipeCommands.PipeName(App.TargetUsername);
+        var commandFile = PipeCommands.CommandFilePath(App.TargetUsername);
+        string lastCommand = "";
 
         while (!ct.IsCancellationRequested)
         {
             try
             {
-                using var server = new NamedPipeServerStream(pipeName, PipeDirection.In, 1,
-                    PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-                await server.WaitForConnectionAsync(ct);
-
-                using var reader = new StreamReader(server);
-                var command = await reader.ReadLineAsync(ct);
-
-                if (command != null)
-                    Dispatcher.Invoke(() => HandleCommand(command));
+                if (File.Exists(commandFile))
+                {
+                    var command = File.ReadAllText(commandFile).Trim();
+                    if (!string.IsNullOrEmpty(command) && command != lastCommand)
+                    {
+                        lastCommand = command;
+                        Dispatcher.Invoke(() => HandleCommand(command));
+                    }
+                }
             }
-            catch (OperationCanceledException) { break; }
-            catch { await Task.Delay(1000, ct); }
+            catch { }
+
+            await Task.Delay(2000, ct);
         }
     }
 
@@ -192,6 +193,9 @@ public partial class MainWindow : Window
         ConfigService.SaveState(state);
 
         LogService.Log(App.TargetUsername, $"Extra time granted: {extraMinutes} min");
+
+        // Clear the command file so the service knows we're unlocked
+        try { File.Delete(PipeCommands.CommandFilePath(App.TargetUsername)); } catch { }
 
         _failedAttempts = 0;
         HideLockScreen();

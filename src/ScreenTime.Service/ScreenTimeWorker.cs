@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -299,22 +298,19 @@ public class ScreenTimeWorker : BackgroundService
         public int dwThreadId;
     }
 
-    private async Task SendCommand(string username, string command)
+    private Task SendCommand(string username, string command)
     {
-        var pipeName = PipeCommands.PipeName(username);
         try
         {
-            DebugLog($"  SendCommand: pipe='{pipeName}', command='{command}'");
-            using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out);
-            await client.ConnectAsync(2000);
-            using var writer = new StreamWriter(client) { AutoFlush = true };
-            await writer.WriteLineAsync(command);
-            DebugLog($"  SendCommand: success");
+            var path = PipeCommands.CommandFilePath(username);
+            File.WriteAllText(path, command);
+            DebugLog($"  SendCommand: wrote '{command}' to {path}");
         }
         catch (Exception ex)
         {
             DebugLog($"  SendCommand: FAILED - {ex.Message}");
         }
+        return Task.CompletedTask;
     }
 
     [DllImport("kernel32.dll")]
