@@ -55,12 +55,13 @@ jobs:
               exit /b 1
           )
           set INSTALLDIR=%ProgramFiles%\ScreenTime
+          set SRCDIR=%~dp0
           mkdir "%INSTALLDIR%\Service" 2>nul
           mkdir "%INSTALLDIR%\LockScreen" 2>nul
           mkdir "%INSTALLDIR%\Config" 2>nul
-          xcopy /s /y "Service\*" "%INSTALLDIR%\Service\"
-          xcopy /s /y "LockScreen\*" "%INSTALLDIR%\LockScreen\"
-          xcopy /s /y "Config\*" "%INSTALLDIR%\Config\"
+          xcopy /s /y /e "%SRCDIR%Service\*" "%INSTALLDIR%\Service\"
+          xcopy /s /y /e "%SRCDIR%LockScreen\*" "%INSTALLDIR%\LockScreen\"
+          xcopy /s /y /e "%SRCDIR%Config\*" "%INSTALLDIR%\Config\"
           echo Registering service...
           sc create ScreenTimeService binPath="%INSTALLDIR%\Service\ScreenTime.Service.exe" start=auto
           sc start ScreenTimeService
