@@ -37,13 +37,13 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _pipeCts = new CancellationTokenSource();
+        Task.Run(() => PollForCommands(_pipeCts.Token));
         Loaded += OnLoaded;
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        _pipeCts = new CancellationTokenSource();
-        Task.Run(() => PollForCommands(_pipeCts.Token));
     }
 
     private async Task PollForCommands(CancellationToken ct)
