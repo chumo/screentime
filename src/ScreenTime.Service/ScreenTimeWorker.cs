@@ -15,14 +15,28 @@ public class ScreenTimeWorker : BackgroundService
     private readonly Dictionary<string, bool> _warn1Sent = new();
     private readonly Dictionary<string, Process?> _lockScreenProcesses = new();
 
-    [DllImport("user32.dll")]
-    private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
-
     [StructLayout(LayoutKind.Sequential)]
-    private struct LASTINPUTINFO
+    private struct WTSINFO
     {
-        public uint cbSize;
-        public uint dwTime;
+        public int State;
+        public int SessionId;
+        public int IncomingBytes;
+        public int OutgoingBytes;
+        public int IncomingFrames;
+        public int OutgoingFrames;
+        public int IncomingCompressedBytes;
+        public int OutgoingCompressedBytes;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string WinStationName;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 17)]
+        public string Domain;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 21)]
+        public string UserName;
+        public long ConnectTime;
+        public long DisconnectTime;
+        public long LastInputTime;
+        public long LogonTime;
+        public long CurrentTime;
     }
 
     public ScreenTimeWorker(ILogger<ScreenTimeWorker> logger)
@@ -131,11 +145,29 @@ public class ScreenTimeWorker : BackgroundService
 
     private bool IsUserActive(int inactivityTimeoutMinutes)
     {
-        var info = new LASTINPUTINFO { cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>() };
-        if (!GetLastInputInfo(ref info)) return false;
+        try
+        {
+            var sessionId = WTSGetActiveConsoleSessionId();
+            if (sessionId == 0xFFFFFFFF) return false;
 
-        var idleMs = (uint)Environment.TickCount - info.dwTime;
-        return idleMs < (inactivityTimeoutMinutes * 60 * 1000);
+            if (WTSQuerySessionInformation(IntPtr.Zero, sessionId, WTS_INFO_CLASS.WTSSessionInfo, out var buffer, out var bytesReturned))
+            {
+                try
+                {
+                    var info = Marshal.PtrToStructure<WTSINFO>(buffer);
+                    if (info.LastInputTime == 0 || info.CurrentTime == 0) return true;
+                    var idleTicks = info.CurrentTime - info.LastInputTime;
+                    var idleSeconds = idleTicks / 10_000_000;
+                    return idleSeconds < (inactivityTimeoutMinutes * 60);
+                }
+                finally
+                {
+                    WTSFreeMemory(buffer);
+                }
+            }
+        }
+        catch { }
+        return true;
     }
 
     private string? GetActiveConsoleUser()
@@ -208,5 +240,5 @@ public class ScreenTimeWorker : BackgroundService
     [DllImport("wtsapi32.dll")]
     private static extern void WTSFreeMemory(IntPtr pointer);
 
-    private enum WTS_INFO_CLASS { WTSUserName = 5 }
+    private enum WTS_INFO_CLASS { WTSUserName = 5, WTSSessionInfo = 24 }
 }
