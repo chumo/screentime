@@ -33,6 +33,15 @@
                                         Stop="both"
                                         Remove="uninstall"
                                         Wait="yes" />
+                        <ServiceConfig Id="ScreenTimeServiceConfig"
+                                       ServiceName="ScreenTimeService"
+                                       OnInstall="yes"
+                                       OnReinstall="yes"
+                                       FirstFailureActionType="restart"
+                                       SecondFailureActionType="restart"
+                                       ThirdFailureActionType="restart"
+                                       RestartServiceDelayInSeconds="5"
+                                       ResetPeriodInDays="1" />
                     </Component>
                 </Directory>
                 <Directory Id="LockScreenFolder" Name="LockScreen">
