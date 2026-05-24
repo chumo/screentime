@@ -1,0 +1,59 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore ScreenTime.sln
+
+      - name: Build solution
+        run: dotnet build ScreenTime.sln --configuration Release --no-restore
+
+      - name: Publish Service
+        run: dotnet publish src/ScreenTime.Service/ScreenTime.Service.csproj -c Release -r win-x64 --self-contained -o publish/Service
+
+      - name: Publish LockScreen
+        run: dotnet publish src/ScreenTime.LockScreen/ScreenTime.LockScreen.csproj -c Release -r win-x64 --self-contained -o publish/LockScreen
+
+      - name: Publish Config
+        run: dotnet publish src/ScreenTime.Config/ScreenTime.Config.csproj -c Release -r win-x64 --self-contained -o publish/Config
+
+      - name: Install WiX Toolset
+        run: dotnet tool install --global wix
+
+      - name: Build MSI
+        run: |
+          wix build installer/Package.wxs `
+            -d ServicePublishDir=publish/Service `
+            -d LockScreenPublishDir=publish/LockScreen `
+            -d ConfigPublishDir=publish/Config `
+            -o ScreenTime.msi
+        shell: pwsh
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScreenTime-MSI
+          path: ScreenTime.msi
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ScreenTime.msi

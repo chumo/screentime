@@ -1,0 +1,64 @@
+<Window x:Class="ScreenTime.LockScreen.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ScreenTime"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        Visibility="Hidden">
+
+    <Grid>
+        <!-- Warning Popup -->
+        <Border x:Name="WarningPanel" Visibility="Collapsed"
+                Background="#E63F51B5" CornerRadius="12" Padding="24"
+                HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,40,0,0">
+            <StackPanel>
+                <TextBlock x:Name="WarningText" Text="5 minutes remaining"
+                           Foreground="White" FontSize="20" FontWeight="Bold"
+                           HorizontalAlignment="Center"/>
+                <Button Content="OK" Click="DismissWarning_Click"
+                        Margin="0,12,0,0" Padding="16,6" HorizontalAlignment="Center"
+                        FontSize="14"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Lock Screen -->
+        <Grid x:Name="LockPanel" Visibility="Collapsed" Background="#FF1A1A2E">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="⏰" FontSize="72" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                <TextBlock Text="Screen Time Limit Reached"
+                           Foreground="White" FontSize="36" FontWeight="Bold"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="You have used all your allowed screen time for today."
+                           Foreground="#CCCCCC" FontSize="18" Margin="0,12,0,40"
+                           HorizontalAlignment="Center"/>
+
+                <!-- Unlock Section -->
+                <Border x:Name="UnlockSection" Background="#2A2A4A" CornerRadius="8" Padding="20"
+                        HorizontalAlignment="Center" MinWidth="300">
+                    <StackPanel>
+                        <Button x:Name="UnlockButton" Content="Superuser Unlock"
+                                Click="UnlockButton_Click" Padding="12,6"
+                                HorizontalAlignment="Center" FontSize="14"/>
+
+                        <StackPanel x:Name="PasswordPanel" Visibility="Collapsed" Margin="0,12,0,0">
+                            <PasswordBox x:Name="PasswordBox" FontSize="16" Padding="8"
+                                         MaxLength="128"/>
+                            <TextBox x:Name="ExtraMinutesBox" FontSize="16" Padding="8"
+                                     Margin="0,8,0,0" Text="30"/>
+                            <TextBlock Text="Extra minutes to grant" Foreground="#999"
+                                       FontSize="12" Margin="0,2,0,8"/>
+                            <Button Content="Grant Access" Click="GrantAccess_Click"
+                                    Padding="12,6" HorizontalAlignment="Center" FontSize="14"/>
+                            <TextBlock x:Name="ErrorText" Foreground="#FF5555" FontSize="12"
+                                       Margin="0,8,0,0" HorizontalAlignment="Center"
+                                       Visibility="Collapsed"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
