@@ -94,27 +94,29 @@ public partial class MainWindow : Window
     {
         WarningText.Text = message;
         WarningPanel.Visibility = Visibility.Visible;
-        Visibility = Visibility.Visible;
+        LockPanel.Visibility = Visibility.Collapsed;
         WindowState = WindowState.Normal;
         Width = 400;
         Height = 120;
         Left = (SystemParameters.PrimaryScreenWidth - Width) / 2;
         Top = 40;
         Topmost = true;
-        LockPanel.Visibility = Visibility.Collapsed;
+        Show();
+        Activate();
     }
 
     private void ShowLockScreen()
     {
         WarningPanel.Visibility = Visibility.Collapsed;
         LockPanel.Visibility = Visibility.Visible;
-        Visibility = Visibility.Visible;
         WindowState = WindowState.Maximized;
         Width = SystemParameters.PrimaryScreenWidth;
         Height = SystemParameters.PrimaryScreenHeight;
         Left = 0;
         Top = 0;
         Topmost = true;
+        Show();
+        Activate();
 
         InstallKeyboardHook();
         var hwnd = new WindowInteropHelper(this).Handle;
@@ -125,16 +127,16 @@ public partial class MainWindow : Window
     {
         LockPanel.Visibility = Visibility.Collapsed;
         WarningPanel.Visibility = Visibility.Collapsed;
-        Visibility = Visibility.Hidden;
         PasswordPanel.Visibility = Visibility.Collapsed;
         PasswordBox.Password = string.Empty;
         UninstallKeyboardHook();
+        Hide();
     }
 
     private void DismissWarning_Click(object sender, RoutedEventArgs e)
     {
         WarningPanel.Visibility = Visibility.Collapsed;
-        Visibility = Visibility.Hidden;
+        Hide();
     }
 
     private void UnlockButton_Click(object sender, RoutedEventArgs e)
