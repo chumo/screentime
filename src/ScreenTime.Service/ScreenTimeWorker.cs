@@ -126,6 +126,11 @@ public class ScreenTimeWorker : BackgroundService
             }
 
             EnsureLockScreenProcess(username, isActiveUser);
+
+            if (userState.IsLocked && isActiveUser)
+            {
+                await SendCommand(username, PipeCommands.Lock);
+            }
         }
 
         ConfigService.SaveState(state);
