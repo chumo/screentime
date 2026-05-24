@@ -24,7 +24,7 @@ A Windows 11 application that controls and limits the time a machine is accessib
 | `ScreenTime.Config` | WPF app for superuser configuration (password-protected) |
 | `ScreenTime.Common` | Shared models, configuration, and services |
 
-The service communicates with the lock screen process via named pipes.
+The service communicates with the lock screen process via command files (`C:\ProgramData\ScreenTime\command_{username}.txt`).
 
 ## Installation
 
