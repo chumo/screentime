@@ -12,15 +12,15 @@
     <Grid>
         <!-- Warning Popup -->
         <Border x:Name="WarningPanel" Visibility="Collapsed"
-                Background="#E63F51B5" CornerRadius="12" Padding="24"
-                HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,40,0,0">
+                Background="#E63F51B5" CornerRadius="12" Padding="24,16"
+                HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0">
             <StackPanel>
                 <TextBlock x:Name="WarningText" Text="5 minutes remaining"
-                           Foreground="White" FontSize="20" FontWeight="Bold"
-                           HorizontalAlignment="Center"/>
-                <Button Content="OK" Click="DismissWarning_Click"
-                        Margin="0,12,0,0" Padding="16,6" HorizontalAlignment="Center"
-                        FontSize="14"/>
+                           Foreground="White" FontSize="18" FontWeight="Bold"
+                           HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                <Button Content="I understand" Click="DismissWarning_Click"
+                        Margin="0,10,0,0" Padding="16,6" HorizontalAlignment="Center"
+                        FontSize="13"/>
             </StackPanel>
         </Border>
 

@@ -115,24 +115,24 @@ public partial class MainWindow : Window
         WarningPanel.Visibility = Visibility.Visible;
         LockPanel.Visibility = Visibility.Collapsed;
         WindowState = WindowState.Normal;
-        Width = 400;
-        Height = 120;
-        Left = (SystemParameters.PrimaryScreenWidth - Width) / 2;
-        Top = 40;
-        Topmost = true;
+        SizeToContent = SizeToContent.WidthAndHeight;
         Show();
         Activate();
+        Left = (SystemParameters.PrimaryScreenWidth - ActualWidth) / 2;
+        Top = 40;
+        Topmost = true;
     }
 
     private void ShowLockScreen()
     {
         WarningPanel.Visibility = Visibility.Collapsed;
         LockPanel.Visibility = Visibility.Visible;
-        WindowState = WindowState.Maximized;
-        Width = SystemParameters.PrimaryScreenWidth;
-        Height = SystemParameters.PrimaryScreenHeight;
-        Left = 0;
-        Top = 0;
+        SizeToContent = SizeToContent.Manual;
+        WindowState = WindowState.Normal;
+        Left = SystemParameters.VirtualScreenLeft;
+        Top = SystemParameters.VirtualScreenTop;
+        Width = SystemParameters.VirtualScreenWidth;
+        Height = SystemParameters.VirtualScreenHeight;
         Topmost = true;
         Show();
         Activate();
@@ -207,19 +207,27 @@ public partial class MainWindow : Window
             return;
         }
 
-        var state = ConfigService.LoadState();
-        var userState = state.GetOrCreate(App.TargetUsername);
-        userState.ExtraMinutesGranted += extraMinutes;
-        userState.IsLocked = false;
-        ConfigService.SaveState(state);
+        try
+        {
+            var state = ConfigService.LoadState();
+            var userState = state.GetOrCreate(App.TargetUsername);
+            userState.ExtraMinutesGranted += extraMinutes;
+            userState.IsLocked = false;
+            ConfigService.SaveState(state);
 
-        LogService.Log(App.TargetUsername, $"Extra time granted: {extraMinutes} min");
+            LogService.Log(App.TargetUsername, $"Extra time granted: {extraMinutes} min");
 
-        // Clear the command file so the service knows we're unlocked
-        try { File.Delete(PipeCommands.CommandFilePath(App.TargetUsername)); } catch { }
+            try { File.Delete(PipeCommands.CommandFilePath(App.TargetUsername)); } catch { }
 
-        _failedAttempts = 0;
-        HideLockScreen();
+            _failedAttempts = 0;
+            HideLockScreen();
+        }
+        catch (Exception ex)
+        {
+            ErrorText.Text = $"Error: {ex.Message}";
+            ErrorText.Visibility = Visibility.Visible;
+            LockScreenLog($"GrantAccess error: {ex}");
+        }
     }
 
     private void InstallKeyboardHook()
