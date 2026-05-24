@@ -301,16 +301,19 @@ public class ScreenTimeWorker : BackgroundService
 
     private async Task SendCommand(string username, string command)
     {
+        var pipeName = PipeCommands.PipeName(username);
         try
         {
-            using var client = new NamedPipeClientStream(".", PipeCommands.PipeName(username), PipeDirection.Out);
-            await client.ConnectAsync(1000);
+            DebugLog($"  SendCommand: pipe='{pipeName}', command='{command}'");
+            using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out);
+            await client.ConnectAsync(2000);
             using var writer = new StreamWriter(client) { AutoFlush = true };
             await writer.WriteLineAsync(command);
+            DebugLog($"  SendCommand: success");
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to send command {Command} to {User}", command, username);
+            DebugLog($"  SendCommand: FAILED - {ex.Message}");
         }
     }
 
