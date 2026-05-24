@@ -35,7 +35,7 @@ jobs:
         run: dotnet publish src/ScreenTime.Config/ScreenTime.Config.csproj -c Release -r win-x64 --self-contained -o publish/Config
 
       - name: Install WiX Toolset
-        run: dotnet tool install --global wix
+        run: dotnet tool install --global wix --version 4.0.5
 
       - name: Build MSI
         run: |
@@ -43,7 +43,8 @@ jobs:
             -d ServicePublishDir=publish/Service `
             -d LockScreenPublishDir=publish/LockScreen `
             -d ConfigPublishDir=publish/Config `
-            -o ScreenTime.msi
+            -o ScreenTime.msi `
+            -arch x64
         shell: pwsh
 
       - name: Upload MSI artifact
