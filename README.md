@@ -30,10 +30,10 @@ The service communicates with the lock screen process via named pipes.
 
 ### From Release (Recommended)
 
-1. Download the latest `ScreenTime.msi` from the [Releases](../../releases) page
-2. Right-click the MSI and select **Run as administrator**
-3. Follow the installation wizard
-4. The service starts automatically after installation
+1. Download `ScreenTime.zip` from the [Releases](../../releases) page
+2. Extract the zip to a temporary folder
+3. Right-click `install.bat` and select **Run as administrator**
+4. The script installs files to `C:\Program Files\ScreenTime`, registers and starts the service, and creates a Start Menu shortcut
 
 ### First-Time Setup
 
@@ -73,9 +73,8 @@ After 3 failed password attempts, the unlock is locked out for 5 minutes.
 
 ## Uninstallation
 
-1. Open **Settings > Apps > Installed apps** in Windows
-2. Find **ScreenTime** and click **Uninstall**
-3. The service will be stopped and removed automatically
+1. Run `uninstall.bat` as Administrator (from the extracted zip, or from `C:\Program Files\ScreenTime`)
+2. The service will be stopped and removed, and program files deleted
 
 Configuration data is stored in `C:\ProgramData\ScreenTime\` and is not removed on uninstall. Delete this folder manually to remove all data.
 

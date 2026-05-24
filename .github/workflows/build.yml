@@ -37,27 +37,72 @@ jobs:
       - name: Publish Config
         run: dotnet publish src/ScreenTime.Config/ScreenTime.Config.csproj -c Release -r win-x64 --self-contained -o publish/Config
 
-      - name: Install WiX Toolset
-        run: dotnet tool install --global wix --version 4.0.5
-
-      - name: Build MSI
+      - name: Create installer package
         run: |
-          wix build installer/Package.wxs `
-            -d ServicePublishDir=publish/Service `
-            -d LockScreenPublishDir=publish/LockScreen `
-            -d ConfigPublishDir=publish/Config `
-            -o ScreenTime.msi `
-            -arch x64
+          Compress-Archive -Path publish\Service, publish\LockScreen, publish\Config -DestinationPath ScreenTime-Portable.zip
         shell: pwsh
 
-      - name: Upload MSI artifact
+      - name: Generate install script
+        run: |
+          @'
+          @echo off
+          echo Installing ScreenTime...
+          echo.
+          net session >nul 2>&1
+          if %errorlevel% neq 0 (
+              echo ERROR: Please run this script as Administrator.
+              pause
+              exit /b 1
+          )
+          set INSTALLDIR=%ProgramFiles%\ScreenTime
+          mkdir "%INSTALLDIR%\Service" 2>nul
+          mkdir "%INSTALLDIR%\LockScreen" 2>nul
+          mkdir "%INSTALLDIR%\Config" 2>nul
+          xcopy /s /y "Service\*" "%INSTALLDIR%\Service\"
+          xcopy /s /y "LockScreen\*" "%INSTALLDIR%\LockScreen\"
+          xcopy /s /y "Config\*" "%INSTALLDIR%\Config\"
+          echo Registering service...
+          sc create ScreenTimeService binPath="%INSTALLDIR%\Service\ScreenTime.Service.exe" start=auto
+          sc start ScreenTimeService
+          echo Creating Start Menu shortcut...
+          powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%ProgramData%\Microsoft\Windows\Start Menu\Programs\ScreenTime Config.lnk'); $s.TargetPath = '%INSTALLDIR%\Config\ScreenTime.Config.exe'; $s.WorkingDirectory = '%INSTALLDIR%\Config'; $s.Save()"
+          echo.
+          echo Installation complete!
+          echo Run "ScreenTime Config" from the Start Menu to configure.
+          pause
+          '@ | Out-File -FilePath publish\install.bat -Encoding ASCII
+          @'
+          @echo off
+          echo Uninstalling ScreenTime...
+          net session >nul 2>&1
+          if %errorlevel% neq 0 (
+              echo ERROR: Please run this script as Administrator.
+              pause
+              exit /b 1
+          )
+          sc stop ScreenTimeService 2>nul
+          sc delete ScreenTimeService 2>nul
+          rmdir /s /q "%ProgramFiles%\ScreenTime" 2>nul
+          del "%ProgramData%\Microsoft\Windows\Start Menu\Programs\ScreenTime Config.lnk" 2>nul
+          echo Uninstallation complete.
+          echo Note: Configuration data remains in %ProgramData%\ScreenTime
+          pause
+          '@ | Out-File -FilePath publish\uninstall.bat -Encoding ASCII
+        shell: pwsh
+
+      - name: Create release archive
+        run: |
+          Compress-Archive -Path publish\Service, publish\LockScreen, publish\Config, publish\install.bat, publish\uninstall.bat -DestinationPath ScreenTime.zip
+        shell: pwsh
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ScreenTime-MSI
-          path: ScreenTime.msi
+          name: ScreenTime
+          path: ScreenTime.zip
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: ScreenTime.msi
+          files: ScreenTime.zip
