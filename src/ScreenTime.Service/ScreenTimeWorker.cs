@@ -64,18 +64,24 @@ public class ScreenTimeWorker : BackgroundService
         }
     }
 
+    private void DebugLog(string message)
+    {
+        var debugFile = Path.Combine(ConfigService.GetConfigDir(), "debug.log");
+        File.AppendAllText(debugFile, $"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}");
+    }
+
     private async Task ProcessTick()
     {
         var config = ConfigService.LoadConfig();
         if (config.Users.Count == 0)
         {
-            _logger.LogInformation("No users configured");
+            DebugLog("No users configured");
             return;
         }
 
         var state = ConfigService.LoadState();
         var activeUser = GetActiveConsoleUser();
-        _logger.LogInformation("Active console user: '{User}'", activeUser ?? "(null)");
+        DebugLog($"Tick: activeUser='{activeUser}', configuredUsers={string.Join(",", config.Users.Select(u => u.Username))}");
 
         foreach (var userConfig in config.Users)
         {
@@ -88,8 +94,7 @@ public class ScreenTimeWorker : BackgroundService
             var isActiveUser = !string.IsNullOrEmpty(activeUser) &&
                                username.Equals(activeUser, StringComparison.OrdinalIgnoreCase);
             var isUserActive = isActiveUser && IsUserActive(config.InactivityTimeoutMinutes);
-            _logger.LogInformation("User '{Username}': isActiveUser={IsActive}, isUserActive={Active}",
-                username, isActiveUser, isUserActive);
+            DebugLog($"  {username}: isActiveUser={isActiveUser}, isUserActive={isUserActive}, accumulated={userState.AccumulatedSeconds}");
 
             if (isUserActive && !userState.IsLocked)
             {
