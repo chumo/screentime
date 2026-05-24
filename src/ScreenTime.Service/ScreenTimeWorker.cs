@@ -67,10 +67,15 @@ public class ScreenTimeWorker : BackgroundService
     private async Task ProcessTick()
     {
         var config = ConfigService.LoadConfig();
-        if (config.Users.Count == 0) return;
+        if (config.Users.Count == 0)
+        {
+            _logger.LogInformation("No users configured");
+            return;
+        }
 
         var state = ConfigService.LoadState();
         var activeUser = GetActiveConsoleUser();
+        _logger.LogInformation("Active console user: '{User}'", activeUser ?? "(null)");
 
         foreach (var userConfig in config.Users)
         {
@@ -80,8 +85,11 @@ public class ScreenTimeWorker : BackgroundService
 
             CheckDayReset(userState, resetTime);
 
-            var isActiveUser = username.Equals(activeUser, StringComparison.OrdinalIgnoreCase);
+            var isActiveUser = !string.IsNullOrEmpty(activeUser) &&
+                               username.Equals(activeUser, StringComparison.OrdinalIgnoreCase);
             var isUserActive = isActiveUser && IsUserActive(config.InactivityTimeoutMinutes);
+            _logger.LogInformation("User '{Username}': isActiveUser={IsActive}, isUserActive={Active}",
+                username, isActiveUser, isUserActive);
 
             if (isUserActive && !userState.IsLocked)
             {
@@ -145,29 +153,11 @@ public class ScreenTimeWorker : BackgroundService
 
     private bool IsUserActive(int inactivityTimeoutMinutes)
     {
-        try
-        {
-            var sessionId = WTSGetActiveConsoleSessionId();
-            if (sessionId == 0xFFFFFFFF) return false;
-
-            if (WTSQuerySessionInformation(IntPtr.Zero, sessionId, WTS_INFO_CLASS.WTSSessionInfo, out var buffer, out var bytesReturned))
-            {
-                try
-                {
-                    var info = Marshal.PtrToStructure<WTSINFO>(buffer);
-                    if (info.LastInputTime == 0 || info.CurrentTime == 0) return true;
-                    var idleTicks = info.CurrentTime - info.LastInputTime;
-                    var idleSeconds = idleTicks / 10_000_000;
-                    return idleSeconds < (inactivityTimeoutMinutes * 60);
-                }
-                finally
-                {
-                    WTSFreeMemory(buffer);
-                }
-            }
-        }
-        catch { }
-        return true;
+        // WTSSessionInfo idle detection is unreliable from session 0.
+        // For now, assume active if there's an active console session.
+        // Idle detection will be handled in a future update via the LockScreen process.
+        var sessionId = WTSGetActiveConsoleSessionId();
+        return sessionId != 0xFFFFFFFF;
     }
 
     private string? GetActiveConsoleUser()
