@@ -37,9 +37,22 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        LockScreenLog("MainWindow constructed");
         _pipeCts = new CancellationTokenSource();
         Task.Run(() => PollForCommands(_pipeCts.Token));
         Loaded += OnLoaded;
+    }
+
+    private static void LockScreenLog(string msg)
+    {
+        try
+        {
+            var path = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                "ScreenTime", "lockscreen_debug.log");
+            File.AppendAllText(path, $"[{DateTime.Now:HH:mm:ss}] {msg}\n");
+        }
+        catch { }
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -49,6 +62,7 @@ public partial class MainWindow : Window
     private async Task PollForCommands(CancellationToken ct)
     {
         var commandFile = PipeCommands.CommandFilePath(App.TargetUsername);
+        LockScreenLog($"PollForCommands started, watching: {commandFile}");
         string lastCommand = "";
 
         while (!ct.IsCancellationRequested)
@@ -60,12 +74,17 @@ public partial class MainWindow : Window
                     var command = File.ReadAllText(commandFile).Trim();
                     if (!string.IsNullOrEmpty(command) && command != lastCommand)
                     {
+                        LockScreenLog($"Command received: {command}");
                         lastCommand = command;
                         Dispatcher.Invoke(() => HandleCommand(command));
+                        LockScreenLog($"Command handled: {command}");
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                LockScreenLog($"Poll error: {ex.Message}");
+            }
 
             await Task.Delay(2000, ct);
         }
