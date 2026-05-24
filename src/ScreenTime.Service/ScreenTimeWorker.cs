@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ScreenTime.Common.Models;
@@ -46,6 +48,7 @@ public class ScreenTimeWorker : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         ConfigService.EnsureDirectories();
+        GrantUsersWriteAccess();
         LogService.CleanOldLogs();
 
         while (!stoppingToken.IsCancellationRequested)
@@ -296,6 +299,29 @@ public class ScreenTimeWorker : BackgroundService
         public IntPtr hThread;
         public int dwProcessId;
         public int dwThreadId;
+    }
+
+    private void GrantUsersWriteAccess()
+    {
+        try
+        {
+            var dataDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                "ScreenTime");
+            var dirInfo = new DirectoryInfo(dataDir);
+            var security = dirInfo.GetAccessControl();
+            security.AddAccessRule(new FileSystemAccessRule(
+                new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null),
+                FileSystemRights.Modify,
+                InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                PropagationFlags.None,
+                AccessControlType.Allow));
+            dirInfo.SetAccessControl(security);
+        }
+        catch (Exception ex)
+        {
+            DebugLog($"GrantUsersWriteAccess failed: {ex.Message}");
+        }
     }
 
     private Task SendCommand(string username, string command)

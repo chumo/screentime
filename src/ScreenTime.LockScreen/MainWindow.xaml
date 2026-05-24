@@ -26,7 +26,8 @@
 
         <!-- Lock Screen -->
         <Grid x:Name="LockPanel" Visibility="Collapsed" Background="#FF1A1A2E">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Left" Margin="100,0,0,0"
+                        MaxWidth="600">
                 <TextBlock Text="⏰" FontSize="72" HorizontalAlignment="Center" Margin="0,0,0,20"/>
                 <TextBlock Text="Screen Time Limit Reached"
                            Foreground="White" FontSize="36" FontWeight="Bold"
