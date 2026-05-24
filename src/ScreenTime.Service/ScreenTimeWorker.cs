@@ -192,23 +192,106 @@ public class ScreenTimeWorker : BackgroundService
 
         try
         {
-            var exePath = Path.Combine(AppContext.BaseDirectory, "ScreenTime.LockScreen.exe");
+            var serviceDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+            var installDir = Path.GetDirectoryName(serviceDir)!;
+            var exePath = Path.Combine(installDir, "LockScreen", "ScreenTime.LockScreen.exe");
+            DebugLog($"  LockScreen path: {exePath}, exists={File.Exists(exePath)}");
             if (!File.Exists(exePath)) return;
 
-            var psi = new ProcessStartInfo
+            var sessionId = WTSGetActiveConsoleSessionId();
+            if (sessionId == 0xFFFFFFFF) return;
+
+            if (!LaunchProcessInSession(exePath, username, sessionId))
             {
-                FileName = exePath,
-                Arguments = username,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            _lockScreenProcesses[username] = Process.Start(psi);
-            LogService.Log(username, "Session started");
+                DebugLog($"  Failed to launch LockScreen in session {sessionId}");
+            }
         }
         catch (Exception ex)
         {
+            DebugLog($"  LockScreen launch error: {ex.Message}");
             _logger.LogError(ex, "Failed to launch lock screen for {User}", username);
         }
+    }
+
+    private bool LaunchProcessInSession(string exePath, string args, uint sessionId)
+    {
+        if (!WTSQueryUserToken(sessionId, out var userToken))
+        {
+            DebugLog($"  WTSQueryUserToken failed: {Marshal.GetLastWin32Error()}");
+            return false;
+        }
+
+        try
+        {
+            var si = new STARTUPINFO { cb = Marshal.SizeOf<STARTUPINFO>() };
+            si.lpDesktop = "winsta0\\default";
+            var pi = new PROCESS_INFORMATION();
+
+            var cmdLine = $"\"{exePath}\" {args}";
+            var result = CreateProcessAsUser(
+                userToken, null, cmdLine,
+                IntPtr.Zero, IntPtr.Zero, false,
+                0x00000010, // CREATE_NEW_CONSOLE
+                IntPtr.Zero, null, ref si, out pi);
+
+            if (result)
+            {
+                _lockScreenProcesses[args] = Process.GetProcessById(pi.dwProcessId);
+                CloseHandle(pi.hProcess);
+                CloseHandle(pi.hThread);
+                LogService.Log(args, "Session started");
+                DebugLog($"  LockScreen launched in session {sessionId}, PID={pi.dwProcessId}");
+                return true;
+            }
+            else
+            {
+                DebugLog($"  CreateProcessAsUser failed: {Marshal.GetLastWin32Error()}");
+                return false;
+            }
+        }
+        finally
+        {
+            CloseHandle(userToken);
+        }
+    }
+
+    [DllImport("wtsapi32.dll", SetLastError = true)]
+    private static extern bool WTSQueryUserToken(uint sessionId, out IntPtr phToken);
+
+    [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool CreateProcessAsUser(
+        IntPtr hToken, string? lpApplicationName, string lpCommandLine,
+        IntPtr lpProcessAttributes, IntPtr lpThreadAttributes, bool bInheritHandles,
+        uint dwCreationFlags, IntPtr lpEnvironment, string? lpCurrentDirectory,
+        ref STARTUPINFO lpStartupInfo, out PROCESS_INFORMATION lpProcessInformation);
+
+    [DllImport("kernel32.dll")]
+    private static extern bool CloseHandle(IntPtr handle);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct STARTUPINFO
+    {
+        public int cb;
+        public string lpReserved;
+        public string lpDesktop;
+        public string lpTitle;
+        public int dwX, dwY, dwXSize, dwYSize;
+        public int dwXCountChars, dwYCountChars;
+        public int dwFillAttribute;
+        public int dwFlags;
+        public short wShowWindow;
+        public short cbReserved2;
+        public IntPtr lpReserved2;
+        public IntPtr hStdInput, hStdOutput, hStdError;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PROCESS_INFORMATION
+    {
+        public IntPtr hProcess;
+        public IntPtr hThread;
+        public int dwProcessId;
+        public int dwThreadId;
     }
 
     private async Task SendCommand(string username, string command)
