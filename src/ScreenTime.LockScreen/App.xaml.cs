@@ -105,6 +105,11 @@ public partial class App : Application
         try
         {
             var exePath = @"C:\Program Files\ScreenTime\Config\ScreenTime.Config.exe";
+            if (!File.Exists(exePath))
+            {
+                MessageBox.Show($"Config not found at:\n{exePath}", "ScreenTime", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
             Process.Start(new ProcessStartInfo
             {
                 FileName = exePath,
@@ -114,7 +119,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            LogCrash($"Failed to launch Config: {ex.Message}");
+            MessageBox.Show($"Failed to launch Config:\n{ex.Message}", "ScreenTime", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
