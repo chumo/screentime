@@ -128,6 +128,8 @@ public partial class App : Application
             var path = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
                 "ScreenTime", "lockscreen_debug.log");
+            if (File.Exists(path) && File.GetLastWriteTime(path).Date < DateTime.Now.Date)
+                File.Delete(path);
             File.AppendAllText(path, $"[{DateTime.Now:HH:mm:ss}] {msg}\n");
         }
         catch { }

@@ -69,6 +69,16 @@ public class ScreenTimeWorker : BackgroundService
     private void DebugLog(string message)
     {
         var debugFile = Path.Combine(ConfigService.GetConfigDir(), "debug.log");
+        try
+        {
+            if (File.Exists(debugFile))
+            {
+                var lastWrite = File.GetLastWriteTime(debugFile);
+                if (lastWrite.Date < DateTime.Now.Date)
+                    File.Delete(debugFile);
+            }
+        }
+        catch { }
         File.AppendAllText(debugFile, $"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}");
     }
 
