@@ -114,7 +114,7 @@ public partial class App : Application
             {
                 FileName = exePath,
                 UseShellExecute = true,
-                Verb = "runas"
+                WorkingDirectory = Path.GetDirectoryName(exePath)!
             });
         }
         catch (Exception ex)
