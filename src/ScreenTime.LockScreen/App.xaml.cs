@@ -102,24 +102,39 @@ public partial class App : Application
 
     private static void LaunchConfigAsAdmin()
     {
+        var exePath = @"C:\Program Files\ScreenTime\Config\ScreenTime.Config.exe";
+        if (!File.Exists(exePath))
+        {
+            MessageBox.Show($"Config not found at:\n{exePath}", "ScreenTime", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
         try
         {
-            var exePath = @"C:\Program Files\ScreenTime\Config\ScreenTime.Config.exe";
-            if (!File.Exists(exePath))
-            {
-                MessageBox.Show($"Config not found at:\n{exePath}", "ScreenTime", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
             Process.Start(new ProcessStartInfo
             {
                 FileName = exePath,
                 UseShellExecute = true,
+                Verb = "runas",
                 WorkingDirectory = Path.GetDirectoryName(exePath)!
             });
         }
-        catch (Exception ex)
+        catch
         {
-            MessageBox.Show($"Failed to launch Config:\n{ex.Message}", "ScreenTime", MessageBoxButton.OK, MessageBoxImage.Error);
+            // UAC denied or unavailable — launch without elevation
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = exePath,
+                    UseShellExecute = true,
+                    WorkingDirectory = Path.GetDirectoryName(exePath)!
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to launch Config:\n{ex.Message}", "ScreenTime", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 
