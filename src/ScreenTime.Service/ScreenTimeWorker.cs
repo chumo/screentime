@@ -62,7 +62,7 @@ public class ScreenTimeWorker : BackgroundService
                 _logger.LogError(ex, "Error in main loop");
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
         }
     }
 
@@ -100,7 +100,7 @@ public class ScreenTimeWorker : BackgroundService
 
             if (isUserActive && !userState.IsLocked)
             {
-                userState.AccumulatedSeconds += 30;
+                userState.AccumulatedSeconds += 5;
                 var totalAllowedMinutes = userConfig.Limits.GetLimit(GetEffectiveDay(resetTime))
                                           + userState.ExtraMinutesGranted;
                 var remainingSeconds = (totalAllowedMinutes * 60) - userState.AccumulatedSeconds;
