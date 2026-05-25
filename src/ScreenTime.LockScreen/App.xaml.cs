@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 using Hardcodet.Wpf.TaskbarNotification;
 using ScreenTime.Common.Models;
@@ -35,10 +37,16 @@ public partial class App : Application
 
     private void InitTrayIcon()
     {
+        var contextMenu = new ContextMenu();
+        var configItem = new MenuItem { Header = "Configure..." };
+        configItem.Click += (_, _) => LaunchConfigAsAdmin();
+        contextMenu.Items.Add(configItem);
+
         _trayIcon = new TaskbarIcon
         {
             ToolTipText = "ScreenTime",
-            Icon = CreateTextIcon("--")
+            Icon = CreateTextIcon("--"),
+            ContextMenu = contextMenu
         };
 
         _trayTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
@@ -90,6 +98,24 @@ public partial class App : Application
 
         var handle = bitmap.GetHicon();
         return Icon.FromHandle(handle);
+    }
+
+    private static void LaunchConfigAsAdmin()
+    {
+        try
+        {
+            var exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ScreenTime.Config.exe");
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = exePath,
+                UseShellExecute = true,
+                Verb = "runas"
+            });
+        }
+        catch (Exception ex)
+        {
+            LogCrash($"Failed to launch Config: {ex.Message}");
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
