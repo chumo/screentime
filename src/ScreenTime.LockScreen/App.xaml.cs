@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
@@ -102,25 +101,16 @@ public partial class App : Application
 
     private static void LaunchConfigAsAdmin()
     {
-        var exePath = @"C:\Program Files\ScreenTime\Config\ScreenTime.Config.exe";
-        if (!File.Exists(exePath))
-        {
-            MessageBox.Show($"Config not found at:\n{exePath}", "ScreenTime", MessageBoxButton.OK, MessageBoxImage.Error);
-            return;
-        }
-
         try
         {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = exePath,
-                UseShellExecute = true,
-                WorkingDirectory = Path.GetDirectoryName(exePath)!
-            });
+            var commandPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                "ScreenTime", "launch_config.txt");
+            File.WriteAllText(commandPath, "1");
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Failed to launch Config:\n{ex.Message}", "ScreenTime", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Failed to request Config launch:\n{ex.Message}", "ScreenTime", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

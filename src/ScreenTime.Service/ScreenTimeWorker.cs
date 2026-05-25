@@ -138,6 +138,7 @@ public class ScreenTimeWorker : BackgroundService
         }
 
         ConfigService.SaveState(state);
+        CheckLaunchConfigRequest();
     }
 
     private void CheckDayReset(UserState userState, TimeSpan resetTime)
@@ -301,6 +302,40 @@ public class ScreenTimeWorker : BackgroundService
         public IntPtr hThread;
         public int dwProcessId;
         public int dwThreadId;
+    }
+
+    private void CheckLaunchConfigRequest()
+    {
+        var path = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "ScreenTime", "launch_config.txt");
+
+        if (!File.Exists(path)) return;
+
+        try
+        {
+            File.Delete(path);
+
+            var sessionId = WTSGetActiveConsoleSessionId();
+            if (sessionId == 0xFFFFFFFF) return;
+
+            var serviceDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+            var installDir = Path.GetDirectoryName(serviceDir)!;
+            var exePath = Path.Combine(installDir, "Config", "ScreenTime.Config.exe");
+
+            if (!File.Exists(exePath))
+            {
+                DebugLog($"Config exe not found: {exePath}");
+                return;
+            }
+
+            LaunchProcessInSession(exePath, "", sessionId);
+            DebugLog($"Launched Config in session {sessionId}");
+        }
+        catch (Exception ex)
+        {
+            DebugLog($"CheckLaunchConfigRequest error: {ex.Message}");
+        }
     }
 
     private void GrantUsersWriteAccess()

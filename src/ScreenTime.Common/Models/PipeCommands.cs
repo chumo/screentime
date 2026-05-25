@@ -7,6 +7,7 @@ public static class PipeCommands
     public const string Lock = "LOCK";
     public const string Unlock = "UNLOCK";
     public const string DismissWarning = "DISMISS_WARNING";
+    public const string LaunchConfig = "LAUNCH_CONFIG";
 
     public static string PipeName(string username) => $"ScreenTime_{username}";
 
