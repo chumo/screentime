@@ -105,6 +105,8 @@ public class ScreenTimeWorker : BackgroundService
                                           + userState.ExtraMinutesGranted;
                 var remainingSeconds = (totalAllowedMinutes * 60) - userState.AccumulatedSeconds;
 
+                WriteTimeRemaining(username, remainingSeconds);
+
                 if (remainingSeconds <= 0)
                 {
                     userState.IsLocked = true;
@@ -322,6 +324,17 @@ public class ScreenTimeWorker : BackgroundService
         {
             DebugLog($"GrantUsersWriteAccess failed: {ex.Message}");
         }
+    }
+
+    private void WriteTimeRemaining(string username, int remainingSeconds)
+    {
+        try
+        {
+            var path = PipeCommands.TimeRemainingFilePath(username);
+            var minutes = Math.Max(0, (int)Math.Ceiling(remainingSeconds / 60.0));
+            File.WriteAllText(path, minutes.ToString());
+        }
+        catch { }
     }
 
     private Task SendCommand(string username, string command)

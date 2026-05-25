@@ -15,4 +15,10 @@ public static class PipeCommands
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
             "ScreenTime",
             $"command_{username}.txt");
+
+    public static string TimeRemainingFilePath(string username) =>
+        Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "ScreenTime",
+            $"remaining_{username}.txt");
 }

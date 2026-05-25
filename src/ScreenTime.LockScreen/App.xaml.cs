@@ -1,11 +1,18 @@
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Windows;
+using System.Windows.Threading;
+using Hardcodet.Wpf.TaskbarNotification;
+using ScreenTime.Common.Models;
 
 namespace ScreenTime.LockScreen;
 
 public partial class App : Application
 {
     public static string TargetUsername { get; private set; } = string.Empty;
+    private TaskbarIcon? _trayIcon;
+    private DispatcherTimer? _trayTimer;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -22,6 +29,74 @@ public partial class App : Application
             LogCrash($"Unhandled domain exception: {ex.ExceptionObject}");
 
         LogCrash($"App started, TargetUsername='{TargetUsername}'");
+
+        InitTrayIcon();
+    }
+
+    private void InitTrayIcon()
+    {
+        _trayIcon = new TaskbarIcon
+        {
+            ToolTipText = "ScreenTime",
+            Icon = CreateTextIcon("--")
+        };
+
+        _trayTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        _trayTimer.Tick += (_, _) => UpdateTrayIcon();
+        _trayTimer.Start();
+        UpdateTrayIcon();
+    }
+
+    private void UpdateTrayIcon()
+    {
+        try
+        {
+            var path = PipeCommands.TimeRemainingFilePath(TargetUsername);
+            if (File.Exists(path))
+            {
+                var text = File.ReadAllText(path).Trim();
+                if (int.TryParse(text, out var minutes))
+                {
+                    var label = minutes > 99 ? $"{minutes}" : $"{minutes}m";
+                    var isLow = minutes <= 5;
+                    _trayIcon!.Icon = CreateTextIcon(label, isLow);
+                    _trayIcon.ToolTipText = $"ScreenTime: {minutes} min remaining";
+                    return;
+                }
+            }
+        }
+        catch { }
+        _trayIcon!.Icon = CreateTextIcon("--");
+        _trayIcon.ToolTipText = "ScreenTime";
+    }
+
+    private static Icon CreateTextIcon(string text, bool isWarning = false)
+    {
+        var bitmap = new Bitmap(16, 16);
+        using var g = Graphics.FromImage(bitmap);
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+        g.Clear(Color.Transparent);
+
+        var color = isWarning ? Color.OrangeRed : Color.LimeGreen;
+        var fontSize = text.Length > 2 ? 6.5f : 8f;
+        using var font = new Font("Segoe UI", fontSize, System.Drawing.FontStyle.Bold);
+        using var brush = new SolidBrush(color);
+
+        var size = g.MeasureString(text, font);
+        var x = (16 - size.Width) / 2;
+        var y = (16 - size.Height) / 2;
+        g.DrawString(text, font, brush, x, y);
+
+        var handle = bitmap.GetHicon();
+        return Icon.FromHandle(handle);
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        _trayTimer?.Stop();
+        _trayIcon?.Dispose();
+        base.OnExit(e);
     }
 
     private static void LogCrash(string msg)
