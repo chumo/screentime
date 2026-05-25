@@ -104,7 +104,7 @@ public partial class App : Application
     {
         try
         {
-            var exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ScreenTime.Config.exe");
+            var exePath = @"C:\Program Files\ScreenTime\Config\ScreenTime.Config.exe";
             Process.Start(new ProcessStartInfo
             {
                 FileName = exePath,
