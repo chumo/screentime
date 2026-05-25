@@ -115,26 +115,12 @@ public partial class App : Application
             {
                 FileName = exePath,
                 UseShellExecute = true,
-                Verb = "runas",
                 WorkingDirectory = Path.GetDirectoryName(exePath)!
             });
         }
-        catch
+        catch (Exception ex)
         {
-            // UAC denied or unavailable — launch without elevation
-            try
-            {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = exePath,
-                    UseShellExecute = true,
-                    WorkingDirectory = Path.GetDirectoryName(exePath)!
-                });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to launch Config:\n{ex.Message}", "ScreenTime", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            MessageBox.Show($"Failed to launch Config:\n{ex.Message}", "ScreenTime", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
