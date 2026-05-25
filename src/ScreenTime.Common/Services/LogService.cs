@@ -28,21 +28,35 @@ public static class LogService
     public static List<DailyLogSummary> GetSummaries(string username, int days = 30)
     {
         var logDir = ConfigService.GetLogDir();
-        if (!Directory.Exists(logDir)) return new();
-
         var summaries = new List<DailyLogSummary>();
         var startDate = DateTime.Now.AddDays(-days);
+        var state = ConfigService.LoadState();
+        var userState = state.GetOrCreate(username);
 
         for (var date = startDate.Date; date <= DateTime.Now.Date; date = date.AddDays(1))
         {
-            var logFile = Path.Combine(logDir, $"{date:yyyy-MM-dd}.log");
-            if (!File.Exists(logFile)) continue;
+            var dateStr = date.ToString("yyyy-MM-dd");
+            var logFile = Path.Combine(logDir, $"{dateStr}.log");
 
-            var lines = File.ReadAllLines(logFile)
-                .Where(l => l.Contains($"[{username}]", StringComparison.OrdinalIgnoreCase))
-                .ToList();
+            List<string> lines = new();
+            if (Directory.Exists(logDir) && File.Exists(logFile))
+            {
+                lines = File.ReadAllLines(logFile)
+                    .Where(l => l.Contains($"[{username}]", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
 
-            if (lines.Count == 0) continue;
+            int totalMinutes;
+            if (userState.CurrentDate == dateStr)
+            {
+                totalMinutes = userState.AccumulatedSeconds / 60;
+            }
+            else
+            {
+                totalMinutes = ExtractTotalMinutes(lines);
+            }
+
+            if (lines.Count == 0 && totalMinutes == 0) continue;
 
             var summary = new DailyLogSummary
             {
@@ -50,7 +64,7 @@ public static class LogService
                 SessionCount = lines.Count(l => l.Contains("Session started")),
                 LimitReached = lines.Any(l => l.Contains("Limit reached")),
                 ExtraTimeGranted = lines.Count(l => l.Contains("Extra time granted")),
-                TotalMinutes = ExtractTotalMinutes(lines)
+                TotalMinutes = totalMinutes
             };
             summaries.Add(summary);
         }
