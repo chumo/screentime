@@ -47,6 +47,7 @@ public partial class App : Application
             Icon = CreateTextIcon("--"),
             ContextMenu = contextMenu
         };
+        _trayIcon.TrayMouseDoubleClick += (_, _) => LaunchConfigAsAdmin();
 
         _trayTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _trayTimer.Tick += (_, _) => UpdateTrayIcon();
@@ -58,6 +59,13 @@ public partial class App : Application
     {
         try
         {
+            if (string.IsNullOrEmpty(TargetUsername))
+            {
+                _trayIcon!.Icon = CreateTextIcon("--", false, true);
+                _trayIcon.ToolTipText = "ScreenTime: not configured — double-click to set up";
+                return;
+            }
+
             var path = PipeCommands.TimeRemainingFilePath(TargetUsername);
             if (File.Exists(path))
             {
@@ -74,10 +82,10 @@ public partial class App : Application
         }
         catch { }
         _trayIcon!.Icon = CreateTextIcon("--");
-        _trayIcon.ToolTipText = "ScreenTime";
+        _trayIcon.ToolTipText = "ScreenTime: not tracking — double-click to configure";
     }
 
-    private static Icon CreateTextIcon(string text, bool isWarning = false)
+    private static Icon CreateTextIcon(string text, bool isWarning = false, bool isInactive = false)
     {
         var bitmap = new Bitmap(16, 16);
         using var g = Graphics.FromImage(bitmap);
@@ -85,7 +93,7 @@ public partial class App : Application
         g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
         g.Clear(Color.Transparent);
 
-        var color = isWarning ? Color.OrangeRed : Color.LimeGreen;
+        var color = isInactive ? Color.Gray : isWarning ? Color.OrangeRed : Color.LimeGreen;
         var fontSize = text.Length > 2 ? 6.5f : 8f;
         using var font = new Font("Segoe UI", fontSize, System.Drawing.FontStyle.Bold);
         using var brush = new SolidBrush(color);
