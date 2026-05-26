@@ -63,7 +63,8 @@ jobs:
           xcopy /s /y /e "%SRCDIR%LockScreen\*" "%INSTALLDIR%\LockScreen\"
           xcopy /s /y /e "%SRCDIR%Config\*" "%INSTALLDIR%\Config\"
           echo Registering service...
-          sc create ScreenTimeService binPath="%INSTALLDIR%\Service\ScreenTime.Service.exe" start=auto
+          sc create ScreenTimeService binPath="%INSTALLDIR%\Service\ScreenTime.Service.exe" start=delayed-auto
+          sc failure ScreenTimeService reset=86400 actions=restart/5000/restart/5000/restart/5000
           sc start ScreenTimeService
           echo Creating Start Menu shortcut...
           powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%ProgramData%\Microsoft\Windows\Start Menu\Programs\ScreenTime Config.lnk'); $s.TargetPath = '%INSTALLDIR%\Config\ScreenTime.Config.exe'; $s.WorkingDirectory = '%INSTALLDIR%\Config'; $s.Save()"
