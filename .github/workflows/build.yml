@@ -63,6 +63,10 @@ jobs:
           xcopy /s /y /e "%SRCDIR%LockScreen\*" "%INSTALLDIR%\LockScreen\"
           xcopy /s /y /e "%SRCDIR%Config\*" "%INSTALLDIR%\Config\"
           echo Registering service...
+          sc stop ScreenTimeService >nul 2>&1
+          timeout /t 3 /nobreak >nul
+          sc delete ScreenTimeService >nul 2>&1
+          timeout /t 2 /nobreak >nul
           sc create ScreenTimeService binPath="%INSTALLDIR%\Service\ScreenTime.Service.exe" start=delayed-auto
           sc failure ScreenTimeService reset=86400 actions=restart/5000/restart/5000/restart/5000
           sc start ScreenTimeService
